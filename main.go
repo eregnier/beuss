@@ -6,16 +6,8 @@ import (
 	"net"
 	"os"
 	"strings"
-)
 
-const QUEUES_NAME_LENGTH = 32
-const MAX_MESSAGE_SIZE = 1024 * 100
-const (
-	connHost    = "localhost"
-	connPort    = "6552"
-	connType    = "tcp"
-	MESSAGE_GET = "GET"
-	MESSAGE_PUT = "PUT"
+	env "github.com/eregnier/beuss/env"
 )
 
 type Queue struct {
@@ -36,11 +28,11 @@ func main() {
 }
 
 func onMessage(message []byte) error {
-	if len(message) < QUEUES_NAME_LENGTH {
+	if len(message) < env.QUEUES_NAME_LENGTH {
 		return errors.New("message too short : rejected")
 	}
-	queueName := strings.TrimSpace(string(message[:QUEUES_NAME_LENGTH]))
-	content := message[QUEUES_NAME_LENGTH:]
+	queueName := strings.TrimSpace(string(message[:env.QUEUES_NAME_LENGTH]))
+	content := message[env.QUEUES_NAME_LENGTH:]
 	inputMessage := InputMessage{queueName, content}
 	found := false
 	for x, q := range queues {
@@ -76,17 +68,19 @@ func handleIncomingConnection(c net.Conn) {
 	messageType := ""
 	for {
 		log.Println("Client " + c.RemoteAddr().String() + " connected.")
-		recvData := make([]byte, MAX_MESSAGE_SIZE)
+		recvData := make([]byte, env.MAX_MESSAGE_SIZE)
 		n, err := c.Read(recvData)
 		if err != nil {
 			log.Println("network error on data receive", err)
+			c.Close()
+			return
 		}
 		if n == 4 && string(recvData[:n]) == "QUIT" {
 			c.Close()
 			log.Println("Closed connection from server")
 			return
 		}
-		if messageType == MESSAGE_PUT && n > 0 {
+		if messageType == env.MESSAGE_PUT && n > 0 {
 			log.Println("received message PUT")
 			err := onMessage(recvData[:n])
 			if err != nil {
@@ -96,7 +90,7 @@ func handleIncomingConnection(c net.Conn) {
 				c.Write([]byte("OK"))
 			}
 		}
-		if messageType == MESSAGE_GET && n > 0 {
+		if messageType == env.MESSAGE_GET && n > 0 {
 			log.Println("received message GET")
 			message, err := readMessage(string(recvData[:n]))
 			if err != nil {
@@ -112,12 +106,12 @@ func handleIncomingConnection(c net.Conn) {
 		}
 
 		if messageType == "" && n > 0 {
-			if string(recvData[:n]) == MESSAGE_GET {
-				messageType = MESSAGE_GET
+			if string(recvData[:n]) == env.MESSAGE_GET {
+				messageType = env.MESSAGE_GET
 				c.Write([]byte("OK"))
 			}
-			if string(recvData[:n]) == MESSAGE_PUT {
-				messageType = MESSAGE_PUT
+			if string(recvData[:n]) == env.MESSAGE_PUT {
+				messageType = env.MESSAGE_PUT
 				c.Write([]byte("OK"))
 			}
 			log.Println("connection configuration to " + messageType + " OK")
@@ -131,8 +125,9 @@ func handleIncomingConnection(c net.Conn) {
 }
 
 func listenNetwork() {
-	log.Println("Starting " + connType + " server on " + connHost + ":" + connPort)
-	l, err := net.Listen(connType, connHost+":"+connPort)
+	addr := env.ConnHost + ":" + env.ConnPort
+	log.Println("Starting " + env.ConnType + " server on " + addr)
+	l, err := net.Listen(env.ConnType, addr)
 	if err != nil {
 		log.Println("Error listening:", err.Error())
 		os.Exit(1)

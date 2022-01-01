@@ -7,6 +7,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	b "github.com/eregnier/beuss/client"
+	env "github.com/eregnier/beuss/env"
 )
 
 func TestMain(t *testing.T) {
@@ -19,43 +22,43 @@ func TestMain(t *testing.T) {
 }
 
 func TestPutAndGetMessage(t *testing.T) {
-	connPUT, err := newClient(MESSAGE_PUT)
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	connGET, err := newClient(MESSAGE_GET)
+	connGET, err := b.NewClient(env.MESSAGE_GET)
 	if err != nil {
 		log.Println("error on client GET creation", err)
 		os.Exit(1)
 	}
-	defer clientClose(connGET)
-	defer clientClose(connPUT)
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
 
-	err = clientPutMessage(connPUT, "soupai", []byte("{\"hello\": \"world\"}"))
+	err = b.ClientPutMessage(connPUT, "soupai", []byte("{\"hello\": \"world\"}"))
 	if err != nil {
 		log.Println("Error sending message :/", err)
 	}
 
-	err = clientPutMessage(connPUT, "soupai", []byte("{\"g\": \"g\"}"))
+	err = b.ClientPutMessage(connPUT, "soupai", []byte("{\"g\": \"g\"}"))
 	if err != nil {
 		log.Println("Error sending message :/", err)
 	}
 
 	var message []byte
-	message, err = clientGetMessage(connGET, "soupai")
+	message, err = b.ClientGetMessage(connGET, "soupai")
 	if err != nil {
 		t.Errorf("fail to get message from client")
 	} else if string(message) != "{\"hello\": \"world\"}" {
 		t.Errorf("got wrong message")
 	}
-	message, err = clientGetMessage(connGET, "soupai")
+	message, err = b.ClientGetMessage(connGET, "soupai")
 	if err != nil {
 		t.Errorf("fail to get message from client")
 	} else if string(message) != "{\"g\": \"g\"}" {
 		t.Errorf("got wrong message")
 	}
-	_, err = clientGetMessage(connGET, "soupai")
+	_, err = b.ClientGetMessage(connGET, "soupai")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error")
 	}
@@ -63,85 +66,85 @@ func TestPutAndGetMessage(t *testing.T) {
 }
 
 func TestPutAndGetMessageTwoQueues(t *testing.T) {
-	connPUT, err := newClient(MESSAGE_PUT)
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	connGET, err := newClient(MESSAGE_GET)
+	connGET, err := b.NewClient(env.MESSAGE_GET)
 	if err != nil {
 		log.Println("error on client GET creation", err)
 		os.Exit(1)
 	}
-	defer clientClose(connGET)
-	defer clientClose(connPUT)
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
 
-	err = clientPutMessage(connPUT, "q1", []byte("{\"hello\": \"world\"}"))
+	err = b.ClientPutMessage(connPUT, "q1", []byte("{\"hello\": \"world\"}"))
 	if err != nil {
 		log.Println("Error sending message :/", err)
 	}
 
-	err = clientPutMessage(connPUT, "q2", []byte("{\"g\": \"g\"}"))
+	err = b.ClientPutMessage(connPUT, "q2", []byte("{\"g\": \"g\"}"))
 	if err != nil {
 		log.Println("Error sending message :/", err)
 	}
 
 	var message []byte
-	_, err = clientGetMessage(connGET, "q3")
+	_, err = b.ClientGetMessage(connGET, "q3")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error %s", err)
 	}
-	message, err = clientGetMessage(connGET, "q2")
+	message, err = b.ClientGetMessage(connGET, "q2")
 	if err != nil {
 		t.Errorf("fail to get message from client")
 	} else if string(message) != "{\"g\": \"g\"}" {
 		t.Errorf("got wrong message")
 	}
-	message, err = clientGetMessage(connGET, "q1")
+	message, err = b.ClientGetMessage(connGET, "q1")
 	if err != nil {
 		t.Errorf("fail to get message from client")
 	} else if string(message) != "{\"hello\": \"world\"}" {
 		t.Errorf("got wrong message")
 	}
-	_, err = clientGetMessage(connGET, "q2")
+	_, err = b.ClientGetMessage(connGET, "q2")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error")
 	}
-	_, err = clientGetMessage(connGET, "q1")
+	_, err = b.ClientGetMessage(connGET, "q1")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error")
 	}
 }
 
 func TestBenchSeq(t *testing.T) {
-	connPUT, err := newClient(MESSAGE_PUT)
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	connGET, err := newClient(MESSAGE_GET)
+	connGET, err := b.NewClient(env.MESSAGE_GET)
 	if err != nil {
 		log.Println("error on client GET creation", err)
 		os.Exit(1)
 	}
-	defer clientClose(connGET)
-	defer clientClose(connPUT)
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
 	n := time.Now().UnixMilli()
 	for i := 0; i < 10000; i++ {
-		err = clientPutMessage(connPUT, "bench", []byte("{\"hello\": \"world\"}"))
+		err = b.ClientPutMessage(connPUT, "bench", []byte("{\"hello\": \"world\"}"))
 		if err != nil {
 			log.Println("Error sending message :/", err)
 		}
 	}
 	for i := 0; i < 10000; i++ {
-		message, err := clientGetMessage(connGET, "bench")
+		message, err := b.ClientGetMessage(connGET, "bench")
 		if err != nil {
 			t.Errorf("fail to get message from client")
 		} else if string(message) != "{\"hello\": \"world\"}" {
 			t.Errorf("got wrong message")
 		}
 	}
-	_, err = clientGetMessage(connGET, "bench")
+	_, err = b.ClientGetMessage(connGET, "bench")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error")
 	}
@@ -151,29 +154,29 @@ func TestBenchSeq(t *testing.T) {
 }
 
 func TestBenchParallel(t *testing.T) {
-	connPUT, err := newClient(MESSAGE_PUT)
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	connGET, err := newClient(MESSAGE_GET)
+	connGET, err := b.NewClient(env.MESSAGE_GET)
 	if err != nil {
 		log.Println("error on client GET creation", err)
 		os.Exit(1)
 	}
-	defer clientClose(connGET)
-	defer clientClose(connPUT)
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
 	n := time.Now().UnixMilli()
 	var wg sync.WaitGroup
 	for i := 0; i < 10000; i++ {
 		wg.Add(1)
 		func() {
 
-			err = clientPutMessage(connPUT, "bench", []byte("{\"hello\": \"world\"}"))
+			err = b.ClientPutMessage(connPUT, "bench", []byte("{\"hello\": \"world\"}"))
 			if err != nil {
 				log.Println("Error sending message :/", err)
 			}
-			message, err := clientGetMessage(connGET, "bench")
+			message, err := b.ClientGetMessage(connGET, "bench")
 			if err != nil {
 				t.Errorf("fail to get message from client")
 			} else if string(message) != "{\"hello\": \"world\"}" {
@@ -183,7 +186,7 @@ func TestBenchParallel(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	_, err = clientGetMessage(connGET, "bench")
+	_, err = b.ClientGetMessage(connGET, "bench")
 	if err.Error() != "empty queue" {
 		t.Errorf("expected empty queue error")
 	}

@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"errors"
@@ -7,15 +7,17 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	env "github.com/eregnier/beuss/env"
 )
 
-func newClient(connectionType string) (net.Conn, error) {
-	conn, err := net.Dial(connType, connHost+":"+connPort)
+func NewClient(connectionType string) (net.Conn, error) {
+	conn, err := net.Dial(env.ConnType, env.ConnHost+":"+env.ConnPort)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	if connectionType != MESSAGE_GET && connectionType != MESSAGE_PUT {
+	if connectionType != env.MESSAGE_GET && connectionType != env.MESSAGE_PUT {
 		return nil, errors.New("wrong connection type given, expected on of PUT|GET")
 	}
 	conn.Write([]byte(connectionType))
@@ -33,12 +35,12 @@ func newClient(connectionType string) (net.Conn, error) {
 	}
 }
 
-func clientPutMessage(conn net.Conn, queueName string, message []byte) error {
+func ClientPutMessage(conn net.Conn, queueName string, message []byte) error {
 	l := len(queueName)
-	if l > QUEUES_NAME_LENGTH {
+	if l > env.QUEUES_NAME_LENGTH {
 		return errors.New("queue name too long")
 	}
-	queueName = queueName + strings.Repeat(" ", QUEUES_NAME_LENGTH-l)
+	queueName = queueName + strings.Repeat(" ", env.QUEUES_NAME_LENGTH-l)
 	message = append([]byte(queueName), message...)
 	conn.Write(message)
 	buff := make([]byte, 2)
@@ -50,9 +52,9 @@ func clientPutMessage(conn net.Conn, queueName string, message []byte) error {
 	}
 }
 
-func clientGetMessage(conn net.Conn, queueName string) ([]byte, error) {
+func ClientGetMessage(conn net.Conn, queueName string) ([]byte, error) {
 	conn.Write([]byte(queueName))
-	buff := make([]byte, MAX_MESSAGE_SIZE)
+	buff := make([]byte, env.MAX_MESSAGE_SIZE)
 	n, err := conn.Read(buff)
 	if err != nil {
 		return nil, fmt.Errorf("error with read message connexion")
@@ -66,7 +68,7 @@ func clientGetMessage(conn net.Conn, queueName string) ([]byte, error) {
 	return buff[:n], nil
 }
 
-func clientClose(conn net.Conn) {
+func ClientClose(conn net.Conn) {
 	conn.Write([]byte("QUIT"))
 	time.Sleep(time.Millisecond * 300)
 	conn.Close()
