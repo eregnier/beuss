@@ -1,7 +1,10 @@
 package env
 
+import "os"
+
 const QUEUES_NAME_LENGTH = 32
 const MAX_MESSAGE_SIZE = 1024 * 100
+const CONSUME_DELAY = 1
 const (
 	ConnHost    = "localhost"
 	ConnPort    = "6552"
@@ -9,3 +12,21 @@ const (
 	MESSAGE_GET = "GET"
 	MESSAGE_PUT = "PUT"
 )
+
+func GetHost() string {
+	host := os.Getenv("BHOST")
+	if host != "" {
+		return host
+	} else {
+		return ConnHost
+	}
+}
+
+func GetPort() string {
+	port := os.Getenv("BPORT")
+	if port != "" {
+		return port
+	} else {
+		return ConnPort
+	}
+}

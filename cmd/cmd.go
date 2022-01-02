@@ -11,11 +11,12 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 || (os.Args[1] != "GET" && os.Args[1] != "PUT") {
+	if len(os.Args) != 3 || (os.Args[1] != "GET" && os.Args[1] != "PUT" && os.Args[1] != "ON") {
 		fmt.Println(`
 Usage :
   PUT : echo "content" | ./beuss PUT <queueName>
   GET : ./beuss GET <queueName>
+  ON : ./beuss ON <queueName>
 		`)
 		os.Exit(0)
 	}
@@ -47,5 +48,16 @@ Usage :
 			fmt.Print(string(message))
 		}
 		b.ClientClose(connGET)
+	}
+	if os.Args[1] == "ON" {
+		connGET, err := b.NewClient(env.MESSAGE_GET)
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+		b.ClientOnMessage(connGET, os.Args[2], func(message []byte) {
+			fmt.Print(string(message))
+		})
+		defer b.ClientClose(connGET)
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func NewClient(connectionType string) (net.Conn, error) {
-	conn, err := net.Dial(env.ConnType, env.ConnHost+":"+env.ConnPort)
+	conn, err := net.Dial(env.ConnType, env.GetHost()+":"+env.GetPort())
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -66,6 +66,22 @@ func ClientGetMessage(conn net.Conn, queueName string) ([]byte, error) {
 		return nil, fmt.Errorf("error with read message response")
 	}
 	return buff[:n], nil
+}
+
+func ClientOnMessage(conn net.Conn, queueName string, callback func(message []byte)) {
+	for {
+		message, err := ClientGetMessage(conn, queueName)
+		if err != nil {
+			if err.Error() == "empty queue" {
+				time.Sleep(time.Second * env.CONSUME_DELAY)
+			} else {
+				log.Println("server error |", err)
+				return
+			}
+		} else {
+			callback(message)
+		}
+	}
 }
 
 func ClientClose(conn net.Conn) {

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -192,5 +193,73 @@ func TestBenchParallel(t *testing.T) {
 	}
 	if time.Now().UnixMilli()-n > 3000 {
 		t.Errorf("processing time too long")
+	}
+}
+
+func TestConsumeQueue(t *testing.T) {
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	connGET, err := b.NewClient(env.MESSAGE_GET)
+	if err != nil {
+		log.Println("error on client GET creation", err)
+		os.Exit(1)
+	}
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
+
+	messageCount := 0
+
+	onMessage := func(message []byte) {
+		messageCount++
+		if strconv.Itoa(messageCount) != string(message) {
+			t.Errorf("expecting message count match message content on value %s", message)
+		}
+	}
+	go b.ClientOnMessage(connGET, "consume", onMessage)
+	go func() {
+		_ = b.ClientPutMessage(connPUT, "consume", []byte("1"))
+		_ = b.ClientPutMessage(connPUT, "consume", []byte("2"))
+		_ = b.ClientPutMessage(connPUT, "consume", []byte("3"))
+	}()
+	time.Sleep(time.Second * 2)
+	if messageCount != 3 {
+		t.Errorf("expected 3 message received")
+	}
+}
+
+func TestBenchConsumeQueue(t *testing.T) {
+	connPUT, err := b.NewClient(env.MESSAGE_PUT)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	connGET, err := b.NewClient(env.MESSAGE_GET)
+	if err != nil {
+		log.Println("error on client GET creation", err)
+		os.Exit(1)
+	}
+	defer b.ClientClose(connGET)
+	defer b.ClientClose(connPUT)
+
+	messageCount := 0
+
+	onMessage := func(message []byte) {
+		if strconv.Itoa(messageCount) != string(message) {
+			t.Errorf("expecting message count match message content on value %s", message)
+		}
+		messageCount++
+	}
+	go func() {
+		for i := 0; i < 10000; i++ {
+			_ = b.ClientPutMessage(connPUT, "bench-consume", []byte(strconv.Itoa(i)))
+		}
+	}()
+	go b.ClientOnMessage(connGET, "bench-consume", onMessage)
+	time.Sleep(time.Second * 2)
+	if messageCount != 10000 {
+		t.Errorf("expected 10000 message received")
 	}
 }

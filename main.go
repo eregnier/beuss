@@ -67,7 +67,6 @@ func readMessage(queueName string) ([]byte, error) {
 func handleIncomingConnection(c net.Conn) {
 	messageType := ""
 	for {
-		log.Println("Client " + c.RemoteAddr().String() + " connected.")
 		recvData := make([]byte, env.MAX_MESSAGE_SIZE)
 		n, err := c.Read(recvData)
 		if err != nil {
@@ -125,7 +124,7 @@ func handleIncomingConnection(c net.Conn) {
 }
 
 func listenNetwork() {
-	addr := env.ConnHost + ":" + env.ConnPort
+	addr := "0.0.0.0:" + env.GetPort()
 	log.Println("Starting " + env.ConnType + " server on " + addr)
 	l, err := net.Listen(env.ConnType, addr)
 	if err != nil {
