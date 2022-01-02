@@ -67,7 +67,7 @@ func readMessage(queueName string) ([]byte, error) {
 func handleIncomingConnection(c net.Conn) {
 	messageType := ""
 	for {
-		recvData := make([]byte, env.MAX_MESSAGE_SIZE)
+		recvData := make([]byte, env.GetMaxMessageSize())
 		n, err := c.Read(recvData)
 		if err != nil {
 			log.Println("network error on data receive", err)

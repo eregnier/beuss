@@ -11,11 +11,11 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 || (os.Args[1] != "GET" && os.Args[1] != "PUT" && os.Args[1] != "ON") {
+	if len(os.Args) < 3 || (os.Args[1] != "GET" && os.Args[1] != "PUT" && os.Args[1] != "ON") {
 		fmt.Println(`
 Usage :
   PUT : echo "content" | ./beuss PUT <queueName>
-  GET : ./beuss GET <queueName>
+  GET : ./beuss GET <queueName> <output.ext>
   ON : ./beuss ON <queueName>
 		`)
 		os.Exit(0)
@@ -45,7 +45,13 @@ Usage :
 		if err != nil {
 			log.Println("could not get message", err)
 		} else {
-			fmt.Print(string(message))
+			if len(os.Args) == 4 {
+				if err := os.WriteFile(os.Args[3], message, 0666); err != nil {
+					fmt.Println("error writing file", err)
+				}
+			} else {
+				fmt.Print(string(message))
+			}
 		}
 		b.ClientClose(connGET)
 	}

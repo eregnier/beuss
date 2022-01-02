@@ -1,6 +1,10 @@
 package env
 
-import "os"
+import (
+	"log"
+	"os"
+	"strconv"
+)
 
 const QUEUES_NAME_LENGTH = 32
 const MAX_MESSAGE_SIZE = 1024 * 100
@@ -28,5 +32,18 @@ func GetPort() string {
 		return port
 	} else {
 		return ConnPort
+	}
+}
+
+func GetMaxMessageSize() int {
+	size := os.Getenv("BMAXMESSAGESIZE")
+	if size == "" {
+		return MAX_MESSAGE_SIZE
+	} else {
+		value, err := strconv.Atoi(size)
+		if err != nil {
+			log.Fatalf("wrong message size env value given")
+		}
+		return value
 	}
 }

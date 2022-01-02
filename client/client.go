@@ -54,7 +54,7 @@ func ClientPutMessage(conn net.Conn, queueName string, message []byte) error {
 
 func ClientGetMessage(conn net.Conn, queueName string) ([]byte, error) {
 	conn.Write([]byte(queueName))
-	buff := make([]byte, env.MAX_MESSAGE_SIZE)
+	buff := make([]byte, env.GetMaxMessageSize())
 	n, err := conn.Read(buff)
 	if err != nil {
 		return nil, fmt.Errorf("error with read message connexion")
