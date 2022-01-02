@@ -3,6 +3,6 @@ RUN apk add -U --no-cache ca-certificates
 
 WORKDIR /
 
-COPY main main
+COPY beuss-server .
 
-CMD ["/main"]
+CMD ["/beuss-server"]
